@@ -21,7 +21,7 @@ class PopDialogHandler:
 
     @perf_clock
     def handle(self, title):
-        if any(s in title for s in {"提示信息", "委托确认", "网上交易用户协议", "撤单确认"}):
+        if any(s in title for s in { "委托确认", "网上交易用户协议", "撤单确认"}):
             self._submit_by_shortcut()
             return None
 
@@ -49,6 +49,10 @@ class PopDialogHandler:
                 best_match="确定"
             ).click()
 
+    def _submit_by_space(self):
+        self._set_foreground(self._app.top_window())
+        self._app.top_window().type_keys("{SPACE}", set_foreground=False)
+
     def _submit_by_shortcut(self):
         self._set_foreground(self._app.top_window())
         self._app.top_window().type_keys("%Y", set_foreground=False)
@@ -68,6 +72,9 @@ class TradePopDialogHandler(PopDialogHandler):
             content = self._extract_content()
             if "超出涨跌停" in content:
                 self._submit_by_shortcut()
+                return None
+            if "该股票为风险警示股票" in content:
+                self._submit_by_space()
                 return None
 
             if "委托价格的小数价格应为" in content:
