@@ -88,7 +88,8 @@ class TradePopDialogHandler(PopDialogHandler):
             if "正回购" in content:
                 self._submit_by_shortcut()
                 return None
-
+            else:
+                self._submit_by_space()
             return None
 
         if title == "提示":
@@ -100,6 +101,6 @@ class TradePopDialogHandler(PopDialogHandler):
 
             self._submit_by_click()
             time.sleep(0.05)
-            raise exceptions.TradeError(content)
+            return {"message": content}
         self._close()
         return None
