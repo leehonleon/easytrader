@@ -8,8 +8,8 @@ target = 'jq'  # joinquant
 follower = easytrader.follower(target)
 follower.login(user='18698607330', password='47IuoBux')
 follower.follow(user, [
-        #    'https://www.joinquant.com/algorithm/live/index?backtestId=d0db5b91d613f2216af177f29e895ab9', # 小市值
         'https://www.joinquant.com/algorithm/live/index?backtestId=88fb5e6f325440def3e7589c5f8881dd', # ST股选股弱转强国九条筛选
-        'https://www.joinquant.com/algorithm/live/index?backtestId=838d4b59b63eb1098c68389596eb4c68' # ETF套利小鸡吃米V2.1-Clone-Clone-模拟交易
+        'https://www.joinquant.com/algorithm/live/index?backtestId=6965531d80c487ccca690ea8b0f221a7', # ETF套利小鸡吃米V2.2
+        'https://www.joinquant.com/algorithm/live/index?backtestId=ef67b2e3ba8abff1391985ba867fd12f' # 小市值抽取其他 v1
         ],
 )
