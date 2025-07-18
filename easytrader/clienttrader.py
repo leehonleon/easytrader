@@ -84,6 +84,7 @@ class ClientTrader(IClientTrader):
         return self._grid_strategy_instance
 
     def __init__(self):
+        self.entrust_prop = 'limit'
         self._config = client.create(self.broker_type)
         self._app = None
         self._main = None
@@ -100,6 +101,9 @@ class ClientTrader(IClientTrader):
     @property
     def config(self):
         return self._config
+
+    def setEntrust(self, entrust_prop):
+        self.entrust_prop = entrust_prop
 
     def connect(self, exe_path=None, **kwargs):
         """
@@ -462,10 +466,11 @@ class ClientTrader(IClientTrader):
 
         self.wait(0.1)
 
-        self._type_edit_control_keys(
-            self._config.TRADE_PRICE_CONTROL_ID,
-            easyutils.round_price_by_code(price, code),
-        )
+        if self.entrust_prop != 'market':
+            self._type_edit_control_keys(
+                self._config.TRADE_PRICE_CONTROL_ID,
+                easyutils.round_price_by_code(price, code),
+            )
         self._type_edit_control_keys(
             self._config.TRADE_AMOUNT_CONTROL_ID, str(int(amount))
         )
