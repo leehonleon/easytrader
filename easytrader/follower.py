@@ -4,6 +4,7 @@ import datetime
 import os
 import pickle
 import queue
+import random
 import re
 import threading
 import time
@@ -39,7 +40,7 @@ class BaseFollower(metaclass=abc.ABCMeta):
     CMD_CACHE_FILE = "cmd_cache.pk"
     WEB_REFERER = ""
     WEB_ORIGIN = ""
-    DEFAULT_RUN_TIMERANGE = [("09:00", "11:30"), ("13:00", "15:00")]
+    DEFAULT_RUN_TIMERANGE = [("09:00", "11:35"), ("12:50", "15:00")]
 
     def __init__(self):
         self.trade_queue = queue.Queue()
@@ -187,12 +188,12 @@ class BaseFollower(metaclass=abc.ABCMeta):
         """
         pass
 
-    def track_strategy_worker(self, strategy, name, interval=10, request_timerange=None, **kwargs):
+    def track_strategy_worker(self, strategy, name, interval=1, request_timerange=None, **kwargs):
         """跟踪下单worker
         :param strategy: 策略id
         :param name: 策略名字
         :param interval: 轮询策略的时间间隔，单位为秒
-        :param request_timerange: 时间段，格式为 [("09:00", "11:30"), ("13:00", "15:00")]
+        :param request_timerange: 时间段，格式为 [("09:00", "11:35"), ("12:50", "15:00")]
         """
         if request_timerange is None:
             request_timerange = self.DEFAULT_RUN_TIMERANGE
@@ -215,10 +216,12 @@ class BaseFollower(metaclass=abc.ABCMeta):
                     transactions = self.query_strategy_transaction(
                         strategy, **kwargs
                     )
+                    # print(r"请求一次调仓信息 :%s", name)
+                    time.sleep(random.uniform(0.5, interval))  # 每次请求后随机等待 1~3 秒
                 # pylint: disable=broad-except
                 except Exception as e:
                     logger.exception("无法获取策略 %s 调仓信息, 错误: %s, 跳过此次调仓查询", name, e)
-                    time.sleep(3)
+                    time.sleep(1)
                     continue
                 for transaction in transactions:
                     try :
