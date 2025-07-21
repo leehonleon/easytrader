@@ -10,6 +10,19 @@ import time
 from typing import List
 
 import requests
+import signal
+
+from easytrader.spinner import Spinner
+
+# 全局退出信号
+exit_flag = threading.Event()
+def signal_handler(sig, frame):
+    print(f"\n", end="", flush=True)
+    logger.info("收到退出信号，准备优雅退出...")
+    exit_flag.set()
+
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
 
 from easytrader import exceptions
 from easytrader.log import logger
@@ -26,6 +39,7 @@ class BaseFollower(metaclass=abc.ABCMeta):
     CMD_CACHE_FILE = "cmd_cache.pk"
     WEB_REFERER = ""
     WEB_ORIGIN = ""
+    DEFAULT_RUN_TIMERANGE = [("09:00", "11:30"), ("13:00", "15:00")]
 
     def __init__(self):
         self.trade_queue = queue.Queue()
@@ -145,8 +159,9 @@ class BaseFollower(metaclass=abc.ABCMeta):
                 "entrust_prop": entrust_prop,
                 "send_interval": send_interval,
             },
+            daemon=True  # 👈 新写法
         )
-        trader.setDaemon(True)
+        # trader.setDaemon(True) 旧写法
         trader.start()
 
     @staticmethod
@@ -172,56 +187,72 @@ class BaseFollower(metaclass=abc.ABCMeta):
         """
         pass
 
-    def track_strategy_worker(self, strategy, name, interval=10, **kwargs):
+    def track_strategy_worker(self, strategy, name, interval=10, request_timerange=None, **kwargs):
         """跟踪下单worker
         :param strategy: 策略id
         :param name: 策略名字
-        :param interval: 轮询策略的时间间隔，单位为秒"""
-        while True:
-            try:
-                transactions = self.query_strategy_transaction(
-                    strategy, **kwargs
-                )
-            # pylint: disable=broad-except
-            except Exception as e:
-                logger.exception("无法获取策略 %s 调仓信息, 错误: %s, 跳过此次调仓查询", name, e)
-                time.sleep(3)
-                continue
-            for transaction in transactions:
-                try :
-                    transaction["price"] = float(transaction["price"])
-                    transaction["amount"] = int(transaction["amount"])
-                except Exception as e:
-                    continue
+        :param interval: 轮询策略的时间间隔，单位为秒
+        :param request_timerange: 时间段，格式为 [("09:00", "11:30"), ("13:00", "15:00")]
+        """
+        if request_timerange is None:
+            request_timerange = self.DEFAULT_RUN_TIMERANGE
+        while not exit_flag.is_set():
+            now = datetime.datetime.now().time()
 
-                trade_cmd = {
-                    "strategy": strategy,
-                    "strategy_name": name,
-                    "action": transaction["action"],
-                    "stock_code": transaction["stock_code"],
-                    "amount": int(transaction["amount"]),
-                    "price": float(transaction["price"]),
-                    "datetime": transaction["datetime"],
-                }
-                if self.is_cmd_expired(trade_cmd):
+            # 判断是否在任意一个时间段内
+            in_time_range = False
+            if request_timerange:
+                for start_time_str, end_time_str in request_timerange:
+                    start_time = datetime.datetime.strptime(start_time_str, "%H:%M").time()
+                    end_time = datetime.datetime.strptime(end_time_str, "%H:%M").time()
+
+                    if start_time <= now <= end_time:
+                        in_time_range = True
+                        break
+
+            if not request_timerange or in_time_range:
+                try:
+                    transactions = self.query_strategy_transaction(
+                        strategy, **kwargs
+                    )
+                # pylint: disable=broad-except
+                except Exception as e:
+                    logger.exception("无法获取策略 %s 调仓信息, 错误: %s, 跳过此次调仓查询", name, e)
+                    time.sleep(3)
                     continue
-                logger.info(
-                    "策略 [%s] 发送指令到交易队列, 股票: %s 动作: %s 数量: %s 价格: %s 信号产生时间: %s",
-                    name,
-                    trade_cmd["stock_code"],
-                    trade_cmd["action"],
-                    trade_cmd["amount"],
-                    trade_cmd["price"],
-                    trade_cmd["datetime"],
-                )
-                self.trade_queue.put(trade_cmd)
-                self.add_cmd_to_expired_cmds(trade_cmd)
-            try:
-                for _ in range(interval):
-                    time.sleep(1)
-            except KeyboardInterrupt:
-                logger.info("程序退出")
-                break
+                for transaction in transactions:
+                    try :
+                        transaction["price"] = float(transaction["price"])
+                        transaction["amount"] = int(transaction["amount"])
+                    except Exception as e:
+                        continue
+
+                    trade_cmd = {
+                        "strategy": strategy,
+                        "strategy_name": name,
+                        "action": transaction["action"],
+                        "stock_code": transaction["stock_code"],
+                        "amount": int(transaction["amount"]),
+                        "price": float(transaction["price"]),
+                        "datetime": transaction["datetime"],
+                    }
+                    if self.is_cmd_expired(trade_cmd):
+                        continue
+                    logger.info(
+                        "策略 [%s] 发送指令到交易队列, 股票: %s 动作: %s 数量: %s 价格: %s 信号产生时间: %s",
+                        name,
+                        trade_cmd["stock_code"],
+                        trade_cmd["action"],
+                        trade_cmd["amount"],
+                        trade_cmd["price"],
+                        trade_cmd["datetime"],
+                    )
+                    self.trade_queue.put(trade_cmd)
+                    self.add_cmd_to_expired_cmds(trade_cmd)
+            else:
+                # 不在指定时间段内，等待后再检查
+                time.sleep(interval)
+
 
     @staticmethod
     def generate_expired_cmd_key(cmd):
@@ -354,12 +385,16 @@ class BaseFollower(metaclass=abc.ABCMeta):
         """
         :param send_interval: 交易发送间隔， 默认为0s。调大可防止卖出买入时买出单没有及时成交导致的买入金额不足
         """
-        while True:
-            trade_cmd = self.trade_queue.get()
-            self._execute_trade_cmd(
-                trade_cmd, users, expire_seconds, entrust_prop, send_interval
-            )
-            time.sleep(send_interval)
+        spinner = Spinner("等待交易指令", spinner_type="dots")
+        while not exit_flag.is_set():
+            try:
+                trade_cmd = self.trade_queue.get(timeout=1)  # 添加超时
+                self._execute_trade_cmd(trade_cmd, users, expire_seconds, entrust_prop, send_interval)
+                time.sleep(send_interval)
+            except queue.Empty:
+                spinner.next()
+                time.sleep(0.2)
+
 
     def query_strategy_transaction(self, strategy, **kwargs):
         params = self.create_query_transaction_params(strategy)

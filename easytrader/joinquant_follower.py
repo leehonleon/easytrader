@@ -4,7 +4,9 @@ from threading import Thread
 
 from easytrader import exceptions
 from easytrader.follower import BaseFollower
+from easytrader.follower import exit_flag
 from easytrader.log import logger
+import time
 
 
 class JoinQuantFollower(BaseFollower):
@@ -39,6 +41,7 @@ class JoinQuantFollower(BaseFollower):
             cmd_cache=True,
             entrust_prop="limit",
             send_interval=0,
+            request_timerange=[],
     ):
         """跟踪joinquant对应的模拟交易，支持多用户多策略
         :param users: 支持easytrader的用户对象，支持使用 [] 指定多个用户
@@ -71,13 +74,23 @@ class JoinQuantFollower(BaseFollower):
             strategy_worker = Thread(
                 target=self.track_strategy_worker,
                 args=[strategy_id, strategy_name],
-                kwargs={"interval": track_interval},
+                kwargs={"interval": track_interval, "request_timerange": request_timerange},
+                daemon=True  # 👈 设置为守护线程
             )
             strategy_worker.start()
             workers.append(strategy_worker)
             logger.info("开始跟踪策略: %s", strategy_name)
-        for worker in workers:
-            worker.join()
+        # for worker in workers:
+        #     worker.join()
+        # 不再使用 worker.join()
+        # 而是主线程监听退出信号
+        try:
+            while not exit_flag.is_set():
+                time.sleep(1)
+        except KeyboardInterrupt:
+            logger.info("检测到 Ctrl+C，正在退出...")
+            exit_flag.set()
+        logger.info("主线程执行完了...")
 
     # @staticmethod
     # def extract_strategy_id(strategy_url):
