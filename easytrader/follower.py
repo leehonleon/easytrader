@@ -194,7 +194,7 @@ class BaseFollower(metaclass=abc.ABCMeta):
                     "action": transaction["action"],
                     "stock_code": transaction["stock_code"],
                     "amount": transaction["amount"],
-                    "price": transaction["price"],
+                    "price": float(transaction["price"]),
                     "datetime": transaction["datetime"],
                 }
                 if self.is_cmd_expired(trade_cmd):
