@@ -188,6 +188,12 @@ class BaseFollower(metaclass=abc.ABCMeta):
                 time.sleep(3)
                 continue
             for transaction in transactions:
+                try :
+                    transaction["price"] = float(transaction["price"])
+                    transaction["amount"] = int(transaction["amount"])
+                except Exception as e:
+                    continue
+
                 trade_cmd = {
                     "strategy": strategy,
                     "strategy_name": name,
