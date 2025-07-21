@@ -193,7 +193,7 @@ class BaseFollower(metaclass=abc.ABCMeta):
                     "strategy_name": name,
                     "action": transaction["action"],
                     "stock_code": transaction["stock_code"],
-                    "amount": transaction["amount"],
+                    "amount": int(transaction["amount"]),
                     "price": float(transaction["price"]),
                     "datetime": transaction["datetime"],
                 }
