@@ -42,6 +42,7 @@ class JoinQuantFollower(BaseFollower):
             entrust_prop="limit",
             send_interval=0,
             request_timerange=[],
+            slippage: float = 0.0,
     ):
         """跟踪joinquant对应的模拟交易，支持多用户多策略
         :param users: 支持easytrader的用户对象，支持使用 [] 指定多个用户
@@ -53,6 +54,7 @@ class JoinQuantFollower(BaseFollower):
         :param entrust_prop: 委托方式, 'limit' 为限价，'market' 为市价, 仅在银河实现
         :param send_interval: 交易发送间隔， 默认为0s。调大可防止卖出买入时卖出单没有及时成交导致的买入金额不足
         """
+        self.slippage = slippage
         users = self.warp_list(users)
         strategies = self.warp_list(strategies)
 
