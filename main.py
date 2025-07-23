@@ -13,7 +13,8 @@ follower.follow(user, [
         'https://www.joinquant.com/algorithm/live/index?backtestId=6965531d80c487ccca690ea8b0f221a7', # ETF套利小鸡吃米V2.2
         'https://www.joinquant.com/algorithm/live/index?backtestId=ef67b2e3ba8abff1391985ba867fd12f' # 小市值抽取其他 v1
         ],
-        request_timerange=[("09:00", "11:35"), ("12:50", "15:00")],
+        trade_cmd_expire_seconds=300,
+        request_timerange=[("09:00", "11:35"), ("12:50", "15:10")],
         slippage=0.005,
 )
 print("程序执行完了")
