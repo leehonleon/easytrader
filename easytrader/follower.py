@@ -388,7 +388,7 @@ class BaseFollower(metaclass=abc.ABCMeta):
         """
         :param send_interval: 交易发送间隔， 默认为0s。调大可防止卖出买入时买出单没有及时成交导致的买入金额不足
         """
-        spinner = Spinner("等待交易指令", spinner_type="dots")
+        spinner = Spinner("等待交易指令", spinner_type="arrows")
         while not exit_flag.is_set():
             try:
                 trade_cmd = self.trade_queue.get(timeout=1)  # 添加超时
@@ -396,7 +396,7 @@ class BaseFollower(metaclass=abc.ABCMeta):
                 time.sleep(send_interval)
             except queue.Empty:
                 spinner.next()
-                time.sleep(0.2)
+                time.sleep(0.1)
 
 
     def query_strategy_transaction(self, strategy, **kwargs):
