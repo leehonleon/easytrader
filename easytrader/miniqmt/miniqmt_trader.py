@@ -455,6 +455,9 @@ class MiniqmtTrader:
             例如非交易时间下单可以拿到订单编号，但 on_order_error 回调会报错：
             下单失败回调: order_id=10231, error_id=-61, error_msg=限价买入 [SZ162411] [COUNTER] [12313][当前时间不允许此类证券交易]
         """
+        # 判断股票代码前面是否有sz和sh,有的话去除掉.
+        if security.startswith(('sz', 'sh')):
+            security = security[2:]
         return self.trade(security, price, amount, is_buy=True)
 
     @perf_clock
@@ -472,7 +475,9 @@ class MiniqmtTrader:
             例如非交易时间下单可以拿到订单编号，但 on_order_error 回调会报错：
             下单失败回调: order_id=10231, error_id=-61, error_msg=限价买入 [SZ162411] [COUNTER] [12313][当前时间不允许此类证券交易]
         """
-
+        # 判断股票代码前面是否有sz和sh,有的话去除掉.
+        if security.startswith(('sz', 'sh')):
+            security = security[2:]
         return self.trade(security, price, amount, is_buy=False)
 
     def trade(self, security: str, price: float, amount: int, *, is_buy: bool) -> int:
@@ -491,6 +496,9 @@ class MiniqmtTrader:
             下单失败回调: order_id=10231, error_id=-61, error_msg=限价买入 [SZ162411] [COUNTER] [12313][当前时间不允许此类证券交易]
         """
         action = "买入" if is_buy else "卖出"
+        # 判断股票代码前面是否有sz和sh,有的话去除掉.
+        if security.startswith(('sz', 'sh')):
+            security = security[2:]
         logger.info(f"限价{action}请求: 股票代码={security}, 价格={price}, 数量={amount}")
         
         order_id = self._trader.order_stock(
@@ -535,7 +543,9 @@ class MiniqmtTrader:
             例如非交易时间下单可以拿到订单编号，但 on_order_error 回调会报错：
             下单失败回调: order_id=10231, error_id=-61, error_msg=限价买入 [SZ162411] [COUNTER] [12313][当前时间不允许此类证券交易]
         """
-
+        # 判断股票代码前面是否有sz和sh,有的话去除掉.
+        if security.startswith(('sz', 'sh')):
+            security = security[2:]
         return self.market_trade(security, amount, ttype, is_buy=True)
 
     @perf_clock
@@ -564,7 +574,9 @@ class MiniqmtTrader:
             例如非交易时间下单可以拿到订单编号，但 on_order_error 回调会报错：
             下单失败回调: order_id=10231, error_id=-61, error_msg=限价买入 [SZ162411] [COUNTER] [12313][当前时间不允许此类证券交易]
         """
-
+        # 判断股票代码前面是否有sz和sh,有的话去除掉.
+        if security.startswith(('sz', 'sh')):
+            security = security[2:]
         return self.market_trade(security, amount, ttype, is_buy=False)
 
     def market_trade(self, security: str, amount: int, ttype: str = None, *, is_buy: bool):
@@ -594,7 +606,9 @@ class MiniqmtTrader:
         """
         if ttype is None:
             ttype = '对手方最优价格委托'
-
+        # 判断股票代码前面是否有sz和sh,有的话去除掉.
+        if security.startswith(('sz', 'sh')):
+            security = security[2:]
         action = "市价买入" if is_buy else "市价卖出"
         logger.info(f"{action}请求: 股票代码={security}, 委托类型={ttype}, 数量={amount}")
 

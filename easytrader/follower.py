@@ -352,7 +352,6 @@ class BaseFollower(metaclass=abc.ABCMeta):
                 "security": trade_cmd["stock_code"],
                 "price": actual_price,
                 "amount": trade_cmd["amount"],
-                "entrust_prop": entrust_prop,
             }
             try:
                 response = getattr(user, trade_cmd["action"])(**args)
@@ -383,16 +382,18 @@ class BaseFollower(metaclass=abc.ABCMeta):
                 )
 
     def trade_worker(
-        self, users, expire_seconds=120, entrust_prop="limit", send_interval=0
+        self, users, expire_seconds=120, send_interval=0
     ):
         """
+        :param users
+        :expire_seconds
         :param send_interval: 交易发送间隔， 默认为0s。调大可防止卖出买入时买出单没有及时成交导致的买入金额不足
         """
         spinner = Spinner("等待交易指令", spinner_type="arrows")
         while not exit_flag.is_set():
             try:
                 trade_cmd = self.trade_queue.get(timeout=1)  # 添加超时
-                self._execute_trade_cmd(trade_cmd, users, expire_seconds, entrust_prop, send_interval)
+                self._execute_trade_cmd(trade_cmd, users, expire_seconds, send_interval)
                 time.sleep(send_interval)
             except queue.Empty:
                 spinner.next()
