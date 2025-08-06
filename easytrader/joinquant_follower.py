@@ -51,8 +51,10 @@ class JoinQuantFollower(BaseFollower):
         :param track_interval: 轮训模拟交易时间，单位为秒
         :param trade_cmd_expire_seconds: 交易指令过期时间, 单位为秒
         :param cmd_cache: 是否读取存储历史执行过的指令，防止重启时重复执行已经交易过的指令
-        :param entrust_prop: 委托方式, 'limit' 为限价，'market' 为市价, 仅在银河实现
+        :param entrust_prop: 市价交易
         :param send_interval: 交易发送间隔， 默认为0s。调大可防止卖出买入时卖出单没有及时成交导致的买入金额不足
+        :param request_timerange: 请求时段
+        :param slippage:滑点
         """
         self.slippage = slippage
         users = self.warp_list(users)
@@ -62,7 +64,7 @@ class JoinQuantFollower(BaseFollower):
             self.load_expired_cmd_cache()
 
         self.start_trader_thread(
-            users, trade_cmd_expire_seconds, entrust_prop, send_interval
+            users, trade_cmd_expire_seconds, send_interval
         )
 
         workers = []
