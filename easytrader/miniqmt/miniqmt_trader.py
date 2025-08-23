@@ -441,7 +441,7 @@ class MiniqmtTrader:
         return trades
 
     @perf_clock
-    def buy(self, security: str, price: float, amount: int):
+    def buy(self, security: str, price: float, amount: int, **kwargs):
         """
         限价买入
         qmt 官方文档： https://dict.thinktrader.net/nativeApi/xttrader.html?id=7zqjlm#%E8%82%A1%E7%A5%A8%E5%90%8C%E6%AD%A5%E6%8A%A5%E5%8D%95
@@ -518,7 +518,7 @@ class MiniqmtTrader:
         return {'entrust_no': order_id}
 
     @perf_clock
-    def market_buy(self, security, amount, ttype=None):
+    def market_buy(self, security, amount, ttype=None, **kwargs):
         """
         市价买入
         qmt 官方文档： https://dict.thinktrader.net/nativeApi/xttrader.html?id=7zqjlm#%E8%82%A1%E7%A5%A8%E5%90%8C%E6%AD%A5%E6%8A%A5%E5%8D%95
@@ -549,7 +549,7 @@ class MiniqmtTrader:
         return self.market_trade(security, amount, ttype, is_buy=True)
 
     @perf_clock
-    def market_sell(self, security, amount, ttype=None):
+    def market_sell(self, security, amount, ttype=None, **kwargs):
         """
         市价卖出
         qmt 官方文档： https://dict.thinktrader.net/nativeApi/xttrader.html?id=7zqjlm#%E8%82%A1%E7%A5%A8%E5%90%8C%E6%AD%A5%E6%8A%A5%E5%8D%95
@@ -658,4 +658,10 @@ class MiniqmtTrader:
         :param security: 六位证券代码
         :return: 格式化的股票代码
         """
+        # 删除 . 之后的部分
+        if '.' in security:
+            security = security.split('.')[0]
+        # 判断股票代码前面是否有sz和sh,有的话去除掉.
+        if security.startswith(('sz', 'sh','bj','SZ', 'SH','BJ')):
+            security = security[2:]
         return f'{security}.{get_stock_type(security).upper()}'

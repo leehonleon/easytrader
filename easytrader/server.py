@@ -1,4 +1,6 @@
+import datetime
 import functools
+import hashlib
 
 from flask import Flask, jsonify, request
 
@@ -29,8 +31,28 @@ def error_handle(func):
 def post_prepare():
     json_data = request.get_json(force=True)
 
+    # 添加用户登录验证
+    password = json_data.get('password')
+    if not password:
+        return jsonify({"error": "Missing password"}), 401
+
+    # 生成基于当前日期的hash值
+    today = datetime.date.today().strftime('%Y-%m-%d')
+    expected_password = hashlib.md5(today.encode('utf-8')).hexdigest()
+
+    # 验证密码
+    if password != expected_password:
+        return jsonify({"error": "Invalid password"}), 401
+
+    # 密码验证通过后，移除password字段再继续处理
+    json_data.pop('password', None)
+
     user = api.use(json_data.pop("broker"))
-    user.prepare(**json_data)
+    # user.connect(**json_data)
+    user.connect(
+        miniqmt_path=r"D:\\Apps\\国金QMT交易端模拟\\userdata_mini",  # QMT 客户端下的 miniqmt 安装路径
+        stock_account="55011468",  # 资金账号
+    )
 
     global_store["user"] = user
     return jsonify({"msg": "login success"}), 201
@@ -109,7 +131,25 @@ def post_sell():
     res = user.sell(**json_data)
 
     return jsonify(res), 201
+@app.route("/market_buy", methods=["POST"])
+@error_handle
+def post_market_buy():
+    json_data = request.get_json(force=True)
+    user = global_store["user"]
+    res = user.market_buy(**json_data)
 
+    return jsonify(res), 201
+
+
+@app.route("/market_sell", methods=["POST"])
+@error_handle
+def post_market_sell():
+    json_data = request.get_json(force=True)
+
+    user = global_store["user"]
+    res = user.market_sell(**json_data)
+
+    return jsonify(res), 201
 
 @app.route("/cancel_entrust", methods=["POST"])
 @error_handle
