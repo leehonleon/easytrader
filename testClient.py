@@ -1,6 +1,7 @@
 from easytrader import remoteclient
 import datetime
 import hashlib
+from trade_functions import *
 
 user = remoteclient.use(
     'miniqmt',
@@ -16,10 +17,12 @@ user.prepare(
 
 # user.market_buy('002479', 200)
 # user.market_sell('002479', 300)
-print(user.balance)
-print(user.position)
-print(user.today_entrusts)
-print(user.today_trades)
-# print(user.auto_ipo())
-res = user.cancel_entrust(1098909536)
-print(res)
+# print(user.balance)
+# print(user.position)
+# print(user.today_entrusts)
+# print(user.today_trades)
+# res = user.cancel_entrust(1098909536)
+# print(res)
+# buy_until_target(user, '002479', 200)
+buy_until_target(user, '600107', 2000)
+# sell_until_target(user, '000968', 0)
