@@ -26,6 +26,30 @@ print(user.balance) # 账户资金 对象数组
 #                 cmd_cache=False,
 # )
 print(user.position) # 持仓股票 对象数组
-print(user.today_entrusts) # 今日委托
-print(user.today_trades) # 今日成交
+# print(user.today_entrusts) # 今日委托
+# print(user.today_trades) # 今日成交
 #user.cancel_entrust(entrust_no) 撤销委托
+
+
+
+def clear_positions():
+    """
+    清仓函数：市价卖出所有持仓
+    """
+
+    # 获取当前持仓
+    positions = user.position
+    if not positions:
+        print("当前没有持仓")
+        return
+
+    # 市价卖出所有持仓
+    for position in positions:
+        stock_code = position['stock_code']
+        sell_quantity = position['can_use_volume']  # 可卖数量
+        print(f"市价卖出 {stock_code}，数量: {sell_quantity}")
+        user.market_sell(stock_code, sell_quantity)
+
+    print("清仓操作完成")
+
+clear_positions()
