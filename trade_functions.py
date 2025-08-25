@@ -20,6 +20,9 @@ def buy_until_target(user, stock_code, target_quantity):
     :param stock_code: 股票代码
     :param target_quantity: 目标数量
     """
+    if user.is_connected() == False:
+        print("请先连接交易服务器")
+        return
     stock_code = extract_stock_code(stock_code)
     # 获取当前持仓数量
     position = user.position
@@ -81,6 +84,9 @@ def sell_until_target(user, stock_code, target_quantity):
     :param stock_code: 股票代码
     :param target_quantity: 目标数量
     """
+    if user.is_connected() == False:
+        print("请先连接交易服务器")
+        return
     stock_code = extract_stock_code(stock_code)
     # 获取当前持仓数量
     position = user.position
