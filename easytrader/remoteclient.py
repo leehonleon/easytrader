@@ -1,18 +1,48 @@
 # -*- coding: utf-8 -*-
 import requests
-
-from easytrader.utils.misc import file2dict
-
-
+import json
 def use(broker, host, port=1430, **kwargs):
     return RemoteClient(broker, host, port)
 
+def file2dict(path):
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
 
 class RemoteClient:
     def __init__(self, broker, host, port=1430, **kwargs):
         self._s = requests.session()
         self._api = "http://{}:{}".format(host, port)
         self._broker = broker
+        self._is_connected = False
+
+    def common_post(self, endpoint, params):
+        """
+        共通 POST 请求方法
+        :param endpoint: API 端点
+        :param params: 请求参数
+        :return: 响应结果
+        """
+        if not self._is_connected:
+            return {'error': "未连接"}
+        response = self._s.post(self._api + "/" + endpoint + '?a=1', json=params)
+        if response.status_code >= 300 or response.status_code == 201:
+            # raise Exception(response.json()["error"])
+            return {'error': response.json()["error"]}
+        return response.json()
+
+    def common_get(self, endpoint):
+        """
+          共通 GET 请求方法
+          :param endpoint: API 端点
+          :return: 响应结果
+          """
+        if not self._is_connected:
+            return {'error': "未连接"}
+        response = self._s.get(self._api + "/" + endpoint)
+        if response.status_code >= 300:
+            # raise Exception(response.json()["error"])
+            return {'error': response.json()["error"]}
+        return response.json()
 
     def prepare(
         self,
@@ -43,9 +73,17 @@ class RemoteClient:
 
         params["broker"] = self._broker
 
-        response = self._s.post(self._api + "/prepare", json=params)
-        if response.status_code >= 300:
-            raise Exception(response.json()["error"])
+        try:
+            response = self._s.post(self._api + "/prepare", json=params)
+            if response.status_code >= 300:
+                self._is_connected = False
+                return {'error': response.json()["error"]}
+            else:
+                self._is_connected = True
+        except Exception as e:
+            self._is_connected = False
+            return {'error': "连接失败"}
+
         return response.json()
 
     @property
@@ -72,55 +110,39 @@ class RemoteClient:
         return self.common_get("auto_ipo")
 
     def exit(self):
+        self._is_connected = False
         return self.common_get("exit")
 
-    def common_get(self, endpoint):
-        response = self._s.get(self._api + "/" + endpoint)
-        if response.status_code >= 300:
-            raise Exception(response.json()["error"])
-        return response.json()
+    def is_connected(self):
+        """
+        检查是否已连接到服务器
+        :return: 连接状态 (True/False)
+        """
+        return self._is_connected
+
 
     def buy(self, security, price, amount, **kwargs):
         params = locals().copy()
         params.pop("self")
-
-        response = self._s.post(self._api + "/buy", json=params)
-        if response.status_code >= 300:
-            raise Exception(response.json()["error"])
-        return response.json()
+        return self.common_post("buy", params)
 
     def sell(self, security, price, amount, **kwargs):
         params = locals().copy()
         params.pop("self")
-
-        response = self._s.post(self._api + "/sell", json=params)
-        if response.status_code >= 300:
-            raise Exception(response.json()["error"])
-        return response.json()
+        return self.common_post("sell", params)
 
     def market_buy(self, security, amount, **kwargs):
         params = locals().copy()
         params.pop("self")
-
-        response = self._s.post(self._api + "/market_buy", json=params)
-        if response.status_code >= 300:
-            raise Exception(response.json()["error"])
-        return response.json()
+        return self.common_post("market_buy", params)
 
     def market_sell(self, security, amount, **kwargs):
         params = locals().copy()
         params.pop("self")
-
-        response = self._s.post(self._api + "/market_sell", json=params)
-        if response.status_code >= 300:
-            raise Exception(response.json()["error"])
-        return response.json()
+        return self.common_post("market_sell", params)
 
     def cancel_entrust(self, entrust_no):
         params = locals().copy()
         params.pop("self")
+        return self.common_post("cancel_entrust", params)
 
-        response = self._s.post(self._api + "/cancel_entrust", json=params)
-        if response.status_code >= 300:
-            raise Exception(response.json()["error"])
-        return response.json()
